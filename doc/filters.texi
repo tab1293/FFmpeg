@@ -2443,6 +2443,10 @@ filtering with large delay. Default is disabled.
 
 @item multi
 Enable multichannels evaluation on gain. Default is disabled.
+
+@item zero_phase
+Enable zero phase mode by substracting timestamp to compensate delay.
+Default is disabled.
 @end table
 
 @subsection Examples
@@ -2463,9 +2467,9 @@ custom equalization:
 firequalizer=gain_entry='entry(100,0); entry(400, -4); entry(1000, -6); entry(2000, 0)'
 @end example
 @item
-higher delay:
+higher delay with zero phase to compensate delay:
 @example
-firequalizer=delay=0.1:fixed=on
+firequalizer=delay=0.1:fixed=on:zero_phase=on
 @end example
 @item
 lowpass on left channel, highpass on right channel:
@@ -2760,6 +2764,13 @@ Normalize linearly if possible.
 measured_I, measured_LRA, measured_TP, and measured_thresh must also
 to be specified in order to use this mode.
 Options are true or false. Default is true.
+
+@item dual_mono
+Treat mono input files as "dual-mono". If a mono file is intended for playback
+on a stereo system, its EBU R128 measurement will be perceptually incorrect.
+If set to @code{true}, this option will compensate for this effect.
+Multi-channel input files are not affected by this option.
+Options are true or false. Default is false.
 
 @item print_format
 Set print format for stats. Options are summary, json, or none.
@@ -4512,59 +4523,6 @@ tblend=all_mode=difference128
 @end example
 @end itemize
 
-@section bwdif
-
-Deinterlace the input video ("bwdif" stands for "Bob Weaver
-Deinterlacing Filter").
-
-Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
-interpolation algorithms.
-It accepts the following parameters:
-
-@table @option
-@item mode
-The interlacing mode to adopt. It accepts one of the following values:
-
-@table @option
-@item 0, send_frame
-Output one frame for each frame.
-@item 1, send_field
-Output one frame for each field.
-@end table
-
-The default value is @code{send_field}.
-
-@item parity
-The picture field parity assumed for the input interlaced video. It accepts one
-of the following values:
-
-@table @option
-@item 0, tff
-Assume the top field is first.
-@item 1, bff
-Assume the bottom field is first.
-@item -1, auto
-Enable automatic detection of field parity.
-@end table
-
-The default value is @code{auto}.
-If the interlacing is unknown or the decoder does not export this information,
-top field first will be assumed.
-
-@item deint
-Specify which frames to deinterlace. Accept one of the following
-values:
-
-@table @option
-@item 0, all
-Deinterlace all frames.
-@item 1, interlaced
-Only deinterlace frames marked as interlaced.
-@end table
-
-The default value is @code{all}.
-@end table
-
 @section boxblur
 
 Apply a boxblur algorithm to the input video.
@@ -4652,6 +4610,59 @@ Set the luma and chroma radii to a fraction of the video dimension:
 boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 @end itemize
+
+@section bwdif
+
+Deinterlace the input video ("bwdif" stands for "Bob Weaver
+Deinterlacing Filter").
+
+Motion adaptive deinterlacing based on yadif with the use of w3fdif and cubic
+interpolation algorithms.
+It accepts the following parameters:
+
+@table @option
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item 0, send_frame
+Output one frame for each frame.
+@item 1, send_field
+Output one frame for each field.
+@end table
+
+The default value is @code{send_field}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item 0, tff
+Assume the top field is first.
+@item 1, bff
+Assume the bottom field is first.
+@item -1, auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
+
+@table @option
+@item 0, all
+Deinterlace all frames.
+@item 1, interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+@end table
 
 @section chromakey
 YUV colorspace color/chroma keying.
@@ -4779,16 +4790,48 @@ backward predicted MVs of B-frames
 @end table
 
 @item qp
-Display quantization parameters using the chroma planes
+Display quantization parameters using the chroma planes.
+
+@item mv_type, mvt
+Set motion vectors type to visualize. Includes MVs from all frames unless specified by @var{frame_type} option.
+
+Available flags for @var{mv_type} are:
+
+@table @samp
+@item fp
+forward predicted MVs
+@item bp
+backward predicted MVs
+@end table
+
+@item frame_type, ft
+Set frame type to visualize motion vectors of.
+
+Available flags for @var{frame_type} are:
+
+@table @samp
+@item if
+intra-coded frames (I-frames)
+@item pf
+predicted frames (P-frames)
+@item bf
+bi-directionally predicted frames (B-frames)
+@end table
 @end table
 
 @subsection Examples
 
 @itemize
 @item
-Visualizes multi-directionals MVs from P and B-Frames using @command{ffplay}:
+Visualize forward predicted MVs of all frames using @command{ffplay}:
 @example
-ffplay -flags2 +export_mvs input.mpg -vf codecview=mv=pf+bf+bb
+ffplay -flags2 +export_mvs input.mp4 -vf codecview=mv_type=fp
+@end example
+
+@item
+Visualize multi-directionals MVs of P and B-Frames using @command{ffplay}:
+@example
+ffplay -flags2 +export_mvs input.mp4 -vf codecview=mv=pf+bf+bb
 @end example
 @end itemize
 
@@ -5025,6 +5068,9 @@ SMPTE-240M
 
 @item fcc
 FCC
+
+@item bt2020
+BT.2020
 @end table
 @end table
 
@@ -5621,7 +5667,7 @@ It accepts the following parameters:
 
 @item limit
 Set higher black value threshold, which can be optionally specified
-from nothing (0) to everything (255 for 8bit based formats). An intensity
+from nothing (0) to everything (255 for 8-bit based formats). An intensity
 value greater to the set value is considered non-black. It defaults to 24.
 You can also specify a value between 0.0 and 1.0 which will be scaled depending
 on the bitdepth of the pixel format.
@@ -8259,7 +8305,7 @@ geq=lum=255*gauss((X/W-0.5)*3)*gauss((Y/H-0.5)*3)/gauss(0)/gauss(0),format=gray
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit color depth.
+regions by truncation to 8-bit color depth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -8381,8 +8427,23 @@ ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
 
 @section hdcd
 
-Decodes high definition audio cd data. 16-Bit PCM stream containing hdcd flags
-is converted to 20-bit PCM stream.
+Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
+embedded HDCD codes is expanded into a 20-bit PCM stream.
+
+The filter supports the Peak Extend and Low-level Gain Adjustment features
+of HDCD, and detects the Transient Filter flag.
+
+@example
+ffmpeg -i HDCD16.flac -af hdcd OUT24.flac
+@end example
+
+When using the filter with wav, note the default encoding for wav is 16-bit,
+so the resulting 20-bit stream will be truncated back to 16-bit. Use something
+like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
+@example
+ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
+ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+@end example
 
 @section hflip
 
@@ -9329,13 +9390,14 @@ Float representation of @code{value} from metadata key.
 
 @item VALUE2
 Float representation of @code{value} as supplied by user in @code{value} option.
-@end table
 
 @item file
-If specified in @code{print} mode, output is written to the named file. When
-filename equals "-" data is written to standard output.
-If @code{file} option is not set, output is written to the log with AV_LOG_INFO
-loglevel.
+If specified in @code{print} mode, output is written to the named file. Instead of
+plain filename any writable url can be specified. Filename ``-'' is a shorthand
+for standard output. If @code{file} option is not set, output is written to the log
+with AV_LOG_INFO loglevel.
+@end table
+
 @end table
 
 @subsection Examples
@@ -9345,8 +9407,18 @@ loglevel.
 Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
 between 0 and 1.
 @example
-@end example
 signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
+@end example
+@item
+Print silencedetect output to file @file{metadata.txt}.
+@example
+silencedetect,ametadata=mode=print:file=metadata.txt
+@end example
+@item
+Direct all metadata to a pipe with file descriptor 4.
+@example
+metadata=mode=print:file='pipe\:4'
+@end example
 @end itemize
 
 @section mpdecimate
@@ -11635,7 +11707,6 @@ To change the display aspect ratio to 16:9, specify one of the following:
 @example
 setdar=dar=1.77777
 setdar=dar=16/9
-setdar=dar=1.77777
 @end example
 
 @item
@@ -15543,7 +15614,7 @@ select=between(t\,10\,20)
 @end example
 
 @item
-Select only I frames contained in the 10-20 time interval:
+Select only I-frames contained in the 10-20 time interval:
 @example
 select=between(t\,10\,20)*eq(pict_type\,I)
 @end example
@@ -16699,14 +16770,6 @@ in a 1024x800 picture using @command{ffmpeg}:
 @example
 ffmpeg -i audio.flac -lavfi showwavespic=split_channels=1:s=1024x800 waveform.png
 @end example
-
-@item
-Colorize the waveform with colorchannelmixer. This example will make
-the waveform a green color approximately RGB(66,217,150). Additional
-channels will be shades of this color.
-@example
-ffmpeg -i audio.mp3 -filter_complex "showwavespic,colorchannelmixer=rr=66/255:gg=217/255:bb=150/255" waveform.png
-@end example
 @end itemize
 
 @section spectrumsynth
@@ -16936,6 +16999,11 @@ Default value is "1".
 
 Note that when the movie is looped the source timestamps are not
 changed, so it will generate non monotonically increasing timestamps.
+
+@item discontinuity
+Specifies the time difference between frames above which the point is
+considered a timestamp discontinuity which is removed by adjusting the later
+timestamps.
 @end table
 
 It allows overlaying a second video on top of the main input of
