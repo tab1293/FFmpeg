@@ -1,3 +1,27 @@
+FATE_TRUEMOTION1 += fate-truemotion1-15
+fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
+
+FATE_TRUEMOTION1 += fate-truemotion1-24
+fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
+fate-truemotion1: $(FATE_TRUEMOTION1)
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
+fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
+
+FATE_TRUEMOTION2RT += fate-truemotion2rt-low
+fate-truemotion2rt-low: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_low.avi -an
+
+FATE_TRUEMOTION2RT += fate-truemotion2rt-mid
+fate-truemotion2rt-mid: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_mid.avi -an
+
+FATE_TRUEMOTION2RT += fate-truemotion2rt-high
+fate-truemotion2rt-high: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tr20_high.avi -an
+
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TRUEMOTION2RT) += $(FATE_TRUEMOTION2RT)
+fate-truemotion2rt: $(FATE_TRUEMOTION2RT)
+
 FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
 fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/coeff_level64.mkv
 
@@ -32,19 +56,19 @@ FATE_VP8-$(CONFIG_MATROSKA_DEMUXER) += fate-vp8-alpha
 fate-vp8-alpha: CMD = framecrc -i $(TARGET_SAMPLES)/vp8_alpha/vp8_video_with_alpha.webm -vcodec copy
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest
-fate-webm-dash-manifest: CMD = run $(FFMPEG) -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video2.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio2.webm -c copy -map 0 -map 1 -map 2 -map 3 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" -
+fate-webm-dash-manifest: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video2.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio2.webm -c copy -map 0 -map 1 -map 2 -map 3 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1 id=1,streams=2,3" -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-unaligned-video-streams
-fate-webm-dash-manifest-unaligned-video-streams: CMD = run $(FFMPEG) -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
+fate-webm-dash-manifest-unaligned-video-streams: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-unaligned-audio-streams
-fate-webm-dash-manifest-unaligned-audio-streams: CMD = run $(FFMPEG) -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
+fate-webm-dash-manifest-unaligned-audio-streams: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_audio3.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-representations
-fate-webm-dash-manifest-representations: CMD = run $(FFMPEG) -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
+fate-webm-dash-manifest-representations: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video1.webm -f webm_dash_manifest -i $(TARGET_SAMPLES)/vp8/dash_video4.webm -c copy -map 0 -map 1 -f webm_dash_manifest -adaptation_sets "id=0,streams=0,1" -
 
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live
-fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
+fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
 
 FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-2451
 fate-vp8-2451: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -vsync cfr -an

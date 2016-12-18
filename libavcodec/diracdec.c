@@ -513,7 +513,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
         b->quant = quant;
     }
 
-    if (b->quant > DIRAC_MAX_QUANT_INDEX) {
+    if (b->quant > (DIRAC_MAX_QUANT_INDEX - 1)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", b->quant);
         b->quant = 0;
         return;
@@ -703,7 +703,7 @@ static void decode_subband(DiracContext *s, GetBitContext *gb, int quant,
     uint8_t *buf2 = b2 ? b2->ibuf + top * b2->stride: NULL;
     int x, y;
 
-    if (quant > DIRAC_MAX_QUANT_INDEX) {
+    if (quant > (DIRAC_MAX_QUANT_INDEX - 1)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", quant);
         return;
     }
@@ -835,11 +835,10 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
     for (i = 0; i < 3; i++) {
         int coef_num, coef_par, off = 0;
         int64_t length = s->highquality.size_scaler*get_bits(gb, 8);
-        int64_t start = get_bits_count(gb);
-        int64_t bits_end = start + 8*length;
+        int64_t bits_end = get_bits_count(gb) + 8*length;
         const uint8_t *addr = align_get_bits(gb);
 
-        if (bits_end >= INT_MAX) {
+        if (length*8 > get_bits_left(gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "end too far away\n");
             return AVERROR_INVALIDDATA;
         }
@@ -908,9 +907,10 @@ static int decode_lowdelay(DiracContext *s)
     int slice_num = 0;
 
     if (s->slice_params_num_buf != (s->num_x * s->num_y)) {
-        s->slice_params_buf = av_realloc_f(s->thread_buf, s->num_x * s->num_y, sizeof(DiracSlice));
+        s->slice_params_buf = av_realloc_f(s->slice_params_buf, s->num_x * s->num_y, sizeof(DiracSlice));
         if (!s->slice_params_buf) {
             av_log(s->avctx, AV_LOG_ERROR, "slice params buffer allocation failure\n");
+            s->slice_params_num_buf = 0;
             return AVERROR(ENOMEM);
         }
         s->slice_params_num_buf = s->num_x * s->num_y;
@@ -1226,6 +1226,11 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     else {
         s->num_x        = get_interleaved_ue_golomb(gb);
         s->num_y        = get_interleaved_ue_golomb(gb);
+        if (s->num_x * s->num_y == 0 || s->num_x * (uint64_t)s->num_y > INT_MAX) {
+            av_log(s->avctx,AV_LOG_ERROR,"Invalid numx/y\n");
+            s->num_x = s->num_y = 0;
+            return AVERROR_INVALIDDATA;
+        }
         if (s->ld_picture) {
             s->lowdelay.bytes.num = get_interleaved_ue_golomb(gb);
             s->lowdelay.bytes.den = get_interleaved_ue_golomb(gb);
@@ -1970,7 +1975,9 @@ static int dirac_decode_picture_header(DiracContext *s)
             for (j = 0; j < MAX_FRAMES; j++)
                 if (!s->all_frames[j].avframe->data[0]) {
                     s->ref_pics[i] = &s->all_frames[j];
-                    get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    ret = get_buffer_with_edge(s->avctx, s->ref_pics[i]->avframe, AV_GET_BUFFER_FLAG_REF);
+                    if (ret < 0)
+                        return ret;
                     break;
                 }
 
